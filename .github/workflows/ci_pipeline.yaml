@@ -1,0 +1,54 @@
+name: Docker Image CI
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Build the Docker image
+      run: |
+        docker build ./backend --file backend/Dockerfile --tag ${{ secrets.DOCKER_USER }}/argo_backend:${{ github.run_number }}
+        docker build ./frontend --file frontend/Dockerfile --tag ${{ secrets.DOCKER_USER }}/argo-frontend:${{ github.run_number }}
+      
+    - name: Docker Login
+      uses: docker/login-action@v3.1.0
+      with:
+        username: ${{ secrets.DOCKER_USER }}
+        password: ${{ secrets.DOCKER_TOKEN }}
+
+    - name: push to dockerhub
+      run: |
+        docker push ${{ secrets.DOCKER_USER }}/argo_backend:${{ github.run_number }}
+        docker push ${{ secrets.DOCKER_USER }}/argo_frontend:${{ github.run_number }}
+        
+    - name: Check out my other private repo
+      uses: actions/checkout@master
+      with:
+        repository: Evgeny-Nik/argocd_helm
+        token: ${{ secrets.GIT_TOKEN }}
+
+    - name: Install YQ
+      uses: dcarbone/install-yq-action@v1.1.1
+
+    - name: Update the image name
+      run: |
+        yq  '.backend.backend.image.tag="${{ github.run_number }}"' -i kafka_app/values.yaml
+        yq  '.frontend.frontend.image.tag="${{ github.run_number }}"' -i kafka_app/values.yaml
+
+    - name: Commit changes
+      uses: EndBug/add-and-commit@v9
+      with:
+        add: kafka_app/values.yaml
+        message: "changed version of shop app to ${{ github.run_number }}"
+        pathspec_error_handling: exitImmediately
+        token: ${{ secrets.GIT_TOKEN }}
