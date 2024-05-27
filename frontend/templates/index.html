@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MongoDB + Kafka</title>
+</head>
+<body>
+    <h1>Welcome to our Store</h1>
+
+    <h2>Buy Item</h2>
+    <form method="post" action="/buy">
+        <select name="userID">
+            {% for user in users %}
+                <option value="{{ user.userID }}">{{ user.userName }}</option>
+            {% endfor %}
+        </select>
+        <!-- Dropdown menu for items -->
+        <h2>Choose an Item:</h2>
+        <select name="itemID">
+            {% for item in items %}
+                <option value="{{ item.itemID }}">{{ item.name }} - {{ item.price }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">Buy</button>
+    </form>
+
+    <h2>Users:</h2>
+        {% for user in users %}
+        {{ user.userName }}:
+    <ul>
+            {% for purchase in user.purchases %}
+                {% for item in items %}
+                    {% if purchase == item.itemID %}
+                        <li>{{ item.name }} - {{ item.price }}</li>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+    </ul>
+        {% endfor %}
+</body>
+</html>
